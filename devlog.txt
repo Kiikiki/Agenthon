@@ -62,3 +62,5 @@ SIMPLE DESCRIPTION (LIKE IF IT'S AN EVENT DATE AND WHAT FOR)
 while doing this i wanna test if i can do allEmailsText
 like taskTool
 or do I have to just use 7 days time of mail
+
+allEmailtext was added can't test until tomorrow due to hitting the limit

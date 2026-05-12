@@ -2,6 +2,7 @@ from google import genai
 from dotenv import load_dotenv
 import os
 import time
+import json
 
 class bcolors:
     red = "\033[91m"
@@ -13,64 +14,44 @@ class bcolors:
 apiKey = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=apiKey)
 
-def sortEmailEvent(emailContent, client):
+def extractEventDetails(emails, client):
+    combinedContent = ""
+
+    for i, email in enumerate(emails):
+        combinedContent += f"[Email {i + 1}]\n {email}\n\n"
+
     prompt = f"""
-    Extract event if present.
+        Extract events from the emails below.
 
-    STRICT RULES:
-    - First line MUST be exactly: Event | Organization | DD-MM-YYYY HH:MM
-    - Use "|" as separator ONLY
-    - No extra text before or after
-    - If no event → reply EXACTLY: No event
+        Return ONLY a valid JSON array:
+        
+        Format:
+        [
+        {{
+            "eventName": "...",
+            "organization": "...",
+            "dateTime": "DD-MM-YYYY HH:MM"
+        }}
+        ]
 
-    Email:
-    {emailContent}
+        If no event in an email, skip it.
+
+        Emails:
+        {combinedContent}
     """
+
     try:
         response = client.models.generate_content(
             model = "gemini-2.5-flash",
             contents = prompt
         )
-    
+        return response.text
     except Exception as e:
-        time.sleep(40)
+        print(f"{bcolors.red}[API Error]{bcolors.ENDC} {e}")
+        return "[]"
 
-        try:
-            response = client.models.generate_content(
-                model = "gemini-2.5-flash",
-                contents = prompt
-            )
-            return response.text.strip()
-        except:
-            return "No event"
-        
+    return response.text
 
-    return response.text.strip()
-
-def extractEventDetails(eventInfo):
-    if "No event" in eventInfo.lower():
-        return None
-
-    try:
-        info = eventInfo.split("|")
-        if len(info) < 3:
-            print(f"{bcolors.red}[Error extracting] {bcolors.ENDC}Invalid event format")
-            return None
-        
-        eventName = info[0].strip()
-        organization = info[1].strip()
-        dateTime = info[2].strip()
-
-        return {
-            "eventName": eventName,
-            "organization": organization,
-            "dateTime": dateTime,
-        }
-    
-    except Exception as e:
-        print(f"{bcolors.red}[Error extracting] {bcolors.ENDC}{e}")
-        return None
-    
 def displayEvent(eventList):
     if not eventList:
         print("No events found in recent emails")
@@ -79,15 +60,19 @@ def displayEvent(eventList):
     print("\nUpcoming Events from Emails:")
     for idx, event in enumerate(eventList, 1):
         print(f"{idx}. {event['eventName']} - {event['organization']} on {event['dateTime']}")
-        if event['description']:
-            print(f"   Description: {event['description']}")
 
 def addEvent(eventList, recentEmails, client):
-    for email in recentEmails:
-        eventInfo = sortEmailEvent(email, client)
-        eventDetails = extractEventDetails(eventInfo)
-        if eventDetails and not isDuplicate(eventDetails, eventList):
-            eventList.append(eventDetails)
+    eventInfo = extractEventDetails(recentEmails, client)
+    try:
+        cleanData = cleanJson(eventInfo)
+        events = json.loads(cleanData)
+
+        for event in events:
+            if event and not isDuplicate(event, eventList):
+                eventList.append(event)
+    
+    except Exception as e:
+        print(f"{bcolors.red}[Error]{bcolors.ENDC} Failed to extract events: {e}")
 
 def isDuplicate(newEvent, eventList):
     for event in eventList:
@@ -97,3 +82,17 @@ def isDuplicate(newEvent, eventList):
         ):
             return True
     return False
+
+def cleanJson(text):
+    text = text.strip()
+
+    if text.startswith("```"):
+        text = text.split("```")[1]
+
+    start = text.find('[')
+    end = text.rfind(']') + 1
+
+    if start != -1 and end != -1:
+        return text[start:end]
+
+    return text
