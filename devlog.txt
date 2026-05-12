@@ -1,0 +1,64 @@
+Gotta make an Ai Agent
+
+Ai Agent = LLM + tools + memory + control loop
+probably going to make an automation assistant cause maybe i can use it later
+so it can do email, calender, reminders
+
+user gives task -> LLM decide action -> call tool -> observe result -> repeat until done
+
+so what i need to do is connect it to an LLM (openAI), make tools, let LLM choose an action, make loop
+
+DON'T AND I MEAN IT DON'T UPLOAD CREDENTIALS BY ACCIDENT PLEASE
+
+work email only contains = upcoming events, task submission, class schedule change
+the ai agent won't get info of upcoming tasks or
+
+I hate modulesss it's confusing i can't remember where the functions are AHHHHHHHHH
+
+problem with view task fix it later since i change the the status to be completed instead of delete
+it won't say no assignment since by technically it not empty
+
+PROBLEM!!! openAI ain't free switch to gemini I ain't paying this
+
+if your reading this i realized my mistakes and changed the key... I forgot to env before committing too
+that it works... yeah 
+
+Testing deadline results:
+Current Tasks:
+1. Assignement 11: Dynamic Programming - Deadline: 2026-05-03 23:59:00 (Overdue by 4 days ago)
+2. compsecweekyes - Deadline: 2026-05-07 23:59:00 (Due Today)
+3. yes - Deadline: 2026-05-07 03:00:00 (Overdue by 1 days ago)
+
+as you can see it ain't by hour so maybe fix later
+
+Testing deletion:
+it deleted the whole list... fix it later
+
+Testing the agent itself:
+unsure results gemini got overloaded need to optimize it
+
+UPDATE TESTING THE AGENT:
+WORKS PERFECTLY AND I DON'T NEED TO LIMIT TO RECENT 7 DAYS CAN CHECK THE WHOLE EMAIL CONTENT
+NO EXHAUSTION
+... still need to change the format to json so it remembers tasks which is which...
+should do more testing
+
+Task Tool function status:
+- uploadTask = works fine improve to upload either to json also so it has id maybe...
+- viewTask = works fine maybe improve it so it can either call active task, done, overdue, and due Today
+- deleteTask = completely broken, i have a feeling i made it delete not by id, but how many task
+- finishTaskAgent = Works like a charm, improve by json
+- checkTaskCompletion = works beautifully no changes needed
+- finishTaskManual = works ig..., but i feel like it has the same problem as deleteTask
+
+fix later lets make the eventTool
+event tool should be able to read email from the
+past 7 days (week).
+DO NOT INCLUDE SPAM MAILS
+GIVE IT TAGS LIKE SCHOOL
+WHAT ORGANISATION IS IT FROM
+SIMPLE DESCRIPTION (LIKE IF IT'S AN EVENT DATE AND WHAT FOR)
+ 
+while doing this i wanna test if i can do allEmailsText
+like taskTool
+or do I have to just use 7 days time of mail
