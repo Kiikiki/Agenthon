@@ -29,6 +29,7 @@ emails = personalMails + workMails
 print("\nCompiled all emails from both accounts.")
 
 recentEmails = thisMonthEmail(emails)
+# thisWeekEmails = thisWeekEmail(recentEmails)
 print("\nFiltered emails from the last month.")
 print(f"\nYou have {len(recentEmails)} emails from the last month.")
 

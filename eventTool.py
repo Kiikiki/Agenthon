@@ -1,4 +1,4 @@
-from google import genai
+from groq import Groq
 from dotenv import load_dotenv
 import os
 import time
@@ -11,46 +11,52 @@ class bcolors:
     yellow = "\033[93m"
     ENDC = "\033[0m"
 
-apiKey = os.getenv("GEMINI_API_KEY")
-client = genai.Client(api_key=apiKey)
+apiKey = os.getenv("GroQ_API_KEY")
+client = Groq(api_key=apiKey)
 
-def extractEventDetails(emails, client):
-    combinedContent = ""
-
-    for i, email in enumerate(emails):
-        combinedContent += f"[Email {i + 1}]\n {email}\n\n"
+def extractEvent(email, Client):
+    email = email[:1000]
 
     prompt = f"""
-        Extract events from the emails below.
+    Extract ONE event from this email.
 
-        Return ONLY a valid JSON array:
-        
-        Format:
-        [
-        {{
-            "eventName": "...",
-            "organization": "...",
-            "dateTime": "DD-MM-YYYY HH:MM"
-        }}
-        ]
+    STRICT RULES:
+    - Output EXACTLY one line
+    - Format MUST be:
+    eventName | organization | DD-MM-YYYY HH:MM
+    - If ANY field is missing → return EXACTLY: NONE
+    - Do NOT explain
+    - Do NOT add extra text
+    - Do NOT guess
 
-        If no event in an email, skip it.
-
-        Emails:
-        {combinedContent}
+    Email:
+    {email}
     """
 
+    response = client.chat.completions.create(
+        model = "llama-3.1-8b-instant",
+        messages = [
+            {"role": "system", "content": "You are a strict event extraction tool. Follow the rules precisely. No explanations, no extra text, just the event details in the specified format."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature = 0
+    )
+
+    return response.choices[0].message.content.strip()
+
+def extractEventDetails(text):
+    if text == "NONE" or "none" in text.lower() or "|" not in text or len(text.split("|")) != 3:
+        return None
+    
     try:
-        response = client.chat.completions.create(
-            model = "llama-3.1-8b-instant",
-            messages = [
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"{bcolors.red}[API Error]{bcolors.ENDC} {e}")
-        return "[]"
+        name, org, dt = [x.strip() for x in text.split("|")]
+        return {
+            "eventName": name,
+            "organization": org,
+            "dateTime": dt
+        }
+    except:
+        return None
 
 def displayEvent(eventList):
     if not eventList:
@@ -62,17 +68,14 @@ def displayEvent(eventList):
         print(f"{idx}. {event['eventName']} - {event['organization']} on {event['dateTime']}")
 
 def addEvent(eventList, recentEmails, client):
-    eventInfo = extractEventDetails(recentEmails, client)
-    try:
-        cleanData = cleanJson(eventInfo)
-        events = json.loads(cleanData)
+    for email in recentEmails:
+        snippet = email.get("snippet", "")
+        raw = extractEvent(snippet, client)
+        event = extractEventDetails(raw)
 
-        for event in events:
-            if event and not isDuplicate(event, eventList):
-                eventList.append(event)
-    
-    except Exception as e:
-        print(f"{bcolors.red}[Error]{bcolors.ENDC} Failed to extract events: {e}")
+        if event and not isDuplicate(event, eventList):
+            eventList.append(event)
+            print(f"{bcolors.green}[Assistant]{bcolors.ENDC} Added an event")
 
 def isDuplicate(newEvent, eventList):
     for event in eventList:
@@ -82,17 +85,3 @@ def isDuplicate(newEvent, eventList):
         ):
             return True
     return False
-
-def cleanJson(text):
-    text = text.strip()
-
-    if text.startswith("```"):
-        text = text.split("```")[1]
-
-    start = text.find('[')
-    end = text.rfind(']') + 1
-
-    if start != -1 and end != -1:
-        return text[start:end]
-
-    return text
