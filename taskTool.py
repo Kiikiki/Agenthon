@@ -1,6 +1,7 @@
 from datetime import datetime
-from google import genai
+from groq import Groq
 from dotenv import load_dotenv
+from emailTool import getEmailSender, isAssignmentEmail
 import os
 
 # color text
@@ -13,8 +14,8 @@ class bcolors:
 
 load_dotenv()
 
-apiKey = os.getenv("GEMINI_API_KEY")
-client = genai.Client(api_key=apiKey)
+apiKey = os.getenv("GroQ_API_KEY")
+client = Groq(api_key=apiKey)
 
 def uploadTask(taskList):
     task = input("task: ")
@@ -87,44 +88,50 @@ def deleteTask(taskList):
         print("\nInvalid input. Please enter a number.")
 
 def finishTaskAgent(taskList, emails, client):
-    allEmailsText = ""
-
-    for email in emails:
-        snippet = email.get('snippet', '')
-        allEmailsText += snippet + "\n"
-
     for task in taskList:
-        if task["status"] == "completed":
+        if task['status'] == "completed":
             continue
 
-        # LLM
-        result = checkTaskCompletion(task['task'], allEmailsText, client)
+        for email in emails:
+            sender = getEmailSender(email)
 
-        if result:
-            task['status'] = "completed"
-            print(f"\n{bcolors.blue}[Assistant]{bcolors.ENDC} {task['task']} marked as completed!")
-            break
+            if not isAssignmentEmail(sender):
+                continue
+
+            snippet = email.get('snippet', '')
+
+            result = checkTaskCompletion(task['task'], snippet, client)
+
+            if result:
+                task['status'] = "completed"
+                print(f"\n{bcolors.blue}[Assistant]{bcolors.ENDC} {task['task']} marked as completed!")
+                break
 
 def checkTaskCompletion(task, emailContent, client):
     prompt = f"""
-    You are an assistant that checks task completion based on email content.
-    
-    Task: 
+    You are a strict classifier.
+
+    Task:
     {task}
 
-    Email Content: 
+    Email Content:
     {emailContent}
 
-    Does the email confirm the task is completed?
-    Answer only with: 'yes' or 'no'.
+    Only answer "yes" if the email explicitly confirms submission or completion.
+
+    Otherwise answer "no".
+
+    Answer only: yes or no.
     """
 
-    response = client.models.generate_content(
-        model = "gemini-2.5-flash",
-        contents = prompt
+    response = client.chat.completions.create(
+        model = "llama-3.1-8b-instant",
+        messages = [
+            {"role": "user", "content": prompt}
+        ]
     )
 
-    answer = response.text.strip().lower()
+    answer = response.choices[0].message.content.strip().lower()
 
     return "yes" in answer
     

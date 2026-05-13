@@ -41,16 +41,16 @@ def extractEventDetails(emails, client):
     """
 
     try:
-        response = client.models.generate_content(
-            model = "gemini-2.5-flash",
-            contents = prompt
+        response = client.chat.completions.create(
+            model = "llama-3.1-8b-instant",
+            messages = [
+                {"role": "user", "content": prompt}
+            ]
         )
-        return response.text
+        return response.choices[0].message.content.strip()
     except Exception as e:
         print(f"{bcolors.red}[API Error]{bcolors.ENDC} {e}")
         return "[]"
-
-    return response.text
 
 def displayEvent(eventList):
     if not eventList:

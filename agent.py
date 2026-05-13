@@ -1,5 +1,5 @@
-from google import genai
-from emailTool import authenticateGmail, getEmails, thisWeekEmail
+from groq import Groq
+from emailTool import authenticateGmail, getEmails, thisWeekEmail, thisMonthEmail
 from taskTool import uploadTask, viewTasks, deleteTask, finishTaskManual, finishTaskAgent
 from eventTool import displayEvent, addEvent
 from datetime import datetime
@@ -8,10 +8,10 @@ import os
 
 load_dotenv()
 
-apiKey = os.getenv("GEMINI_API_KEY")
+apiKey = os.getenv("GROQ_API_KEY")
 
 # connection to an LLM
-client = genai.Client(api_key=apiKey)
+client = Groq(api_key=apiKey)
 
 # load emails from both accounts
 servicePersonal = authenticateGmail('credentialsPersonal.json', 8080)
@@ -28,9 +28,9 @@ print("\nFetched work emails.")
 emails = personalMails + workMails
 print("\nCompiled all emails from both accounts.")
 
-recentEmails = thisWeekEmail(emails)
-print("\nFiltered emails from the last week.")
-print(f"\nYou have {len(recentEmails)} emails from the last week.")
+recentEmails = thisMonthEmail(emails)
+print("\nFiltered emails from the last month.")
+print(f"\nYou have {len(recentEmails)} emails from the last month.")
 
 taskList = []
 eventList = []

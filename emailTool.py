@@ -35,5 +35,24 @@ def thisWeekEmail(emails):
         if int(email['internalDate']) / 1000 > week
     ]
 
+def thisMonthEmail(emails):
+    month = time.time() - 30*24*3600
+    
+    return [
+        email for email in emails
+        if int(email['internalDate']) / 1000 > month
+    ]
+
+def getEmailSender(email):
+    headers = email.get('payload', {}).get('headers', [])
+
+    for header in headers:
+        if header['name'] == 'From':
+            return header['value']
+    return "Unknown Sender"
+
+def isAssignmentEmail(sender):
+    return "noreply@elearning.umn.ac.id" in sender
+
 
 

@@ -64,3 +64,5 @@ like taskTool
 or do I have to just use 7 days time of mail
 
 allEmailtext was added can't test until tomorrow due to hitting the limit
+
+changing gemini to groq since i hear no limit maybe that'll solve my problem
